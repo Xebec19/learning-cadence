@@ -19,20 +19,18 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var HostPort = "127.0.0.1:7933"
+var HostPort = "127.0.0.1:7833"
 var Domain = "test-domain"
 var TaskListName = "test-worker"
 var ClientName = "test-worker"
 var CadenceService = "cadence-frontend"
 
-func init() {
-	workflow.Register(helloWorldWorkflow)
-	activity.Register(helloWorldActivity)
-}
-
 func main() {
 	startWorker(buildLogger(), buildCadenceClient())
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func buildLogger() *zap.Logger {
@@ -70,6 +68,7 @@ func buildCadenceClient() workflowserviceclient.Interface {
 }
 
 func startWorker(logger *zap.Logger, service workflowserviceclient.Interface) {
+
 	// TaskListName identifies set of client workflows, activities, and workers.
 	// It could be your group or client or application name.
 	workerOptions := worker.Options{
@@ -82,6 +81,14 @@ func startWorker(logger *zap.Logger, service workflowserviceclient.Interface) {
 		Domain,
 		TaskListName,
 		workerOptions)
+	// if err != nil {
+	// 	panic("Failed to initialize worker")
+	// }
+
+	// add the following lines to the function startWorker before calling worker.Start()
+	worker.RegisterWorkflow(helloWorldWorkflow)
+	worker.RegisterActivity(helloWorldActivity)
+
 	err := worker.Start()
 	if err != nil {
 		panic("Failed to start worker")
@@ -90,11 +97,11 @@ func startWorker(logger *zap.Logger, service workflowserviceclient.Interface) {
 	logger.Info("Started Worker.", zap.String("worker", TaskListName))
 }
 
-func helloWorldWorkflow(ctx workflow.Context, name string) error {
+func helloWorldWorkflow(ctx workflow.Context, name string) (*string, error) {
 	ao := workflow.ActivityOptions{
-		ScheduleToStartTimeout: time.Second * 5,
+		ScheduleToStartTimeout: time.Minute,
 		StartToCloseTimeout:    time.Minute,
-		HeartbeatTimeout:       time.Second * 5,
+		HeartbeatTimeout:       time.Second * 20,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
@@ -104,12 +111,12 @@ func helloWorldWorkflow(ctx workflow.Context, name string) error {
 	err := workflow.ExecuteActivity(ctx, helloWorldActivity, name).Get(ctx, &helloworldResult)
 	if err != nil {
 		logger.Error("Activity failed.", zap.Error(err))
-		return err
+		return nil, err
 	}
 
 	logger.Info("Workflow completed.", zap.String("Result", helloworldResult))
 
-	return nil
+	return &helloworldResult, nil
 }
 
 func helloWorldActivity(ctx context.Context, name string) (string, error) {
