@@ -25,7 +25,7 @@ The application consists of a single `main.go` file with these key components:
 docker-compose up -d
 ```
 This starts:
-- Cassandra (port 9042) - Cadence's persistence layer
+- PostgreSQL (port 5432) - Cadence's persistence layer
 - Cadence server (multiple ports, gRPC on 7833)
 - Cadence Web UI (port 8088)
 - Prometheus (port 9090) - metrics collection

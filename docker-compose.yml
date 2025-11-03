@@ -1,23 +1,19 @@
 services:
-  cassandra:
-    image: cassandra:4.1.1
+  postgres:
+    image: postgres:13
     ports:
-      - "9042:9042"
+      - "5432:5432"
     environment:
-      - "MAX_HEAP_SIZE=256M"
-      - "HEAP_NEWSIZE=128M"
+      POSTGRES_USER: cadence
+      POSTGRES_PASSWORD: cadence
+      POSTGRES_DB: cadence
     healthcheck:
-      test:
-        [
-          "CMD",
-          "cqlsh",
-          "-u cassandra",
-          "-p cassandra",
-          "-e describe keyspaces",
-        ]
-      interval: 15s
-      timeout: 30s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U cadence"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
   prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -44,7 +40,11 @@ services:
       - "7833:7833"
       - "7936:7936"
     environment:
-      - "CASSANDRA_SEEDS=cassandra"
+      - "DB=postgres12"
+      - "DB_PORT=5432"
+      - "POSTGRES_USER=cadence"
+      - "POSTGRES_PWD=cadence"
+      - "POSTGRES_SEEDS=postgres"
       - "PROMETHEUS_ENDPOINT_0=0.0.0.0:8000"
       - "PROMETHEUS_ENDPOINT_1=0.0.0.0:8001"
       - "PROMETHEUS_ENDPOINT_2=0.0.0.0:8002"
@@ -53,7 +53,7 @@ services:
       - "FRONTEND_PPROF_PORT=7936"
       - "LOG_LEVEL=debug"
     depends_on:
-      cassandra:
+      postgres:
         condition: service_healthy
       prometheus:
         condition: service_started
@@ -74,3 +74,6 @@ services:
       - prometheus
     ports:
       - "3000:3000"
+
+volumes:
+  postgres-data:

@@ -220,7 +220,7 @@ The history endpoint may return the following event types:
 ## Testing the APIs
 
 ### Prerequisites
-1. Start infrastructure:
+1. Start infrastructure (PostgreSQL + Cadence):
 ```bash
 docker-compose up -d
 ```
@@ -229,6 +229,8 @@ docker-compose up -d
 ```bash
 docker-compose logs -f cadence
 ```
+
+Note: PostgreSQL will initialize automatically. First startup may take a bit longer as Cadence sets up the database schema.
 
 3. Start the worker:
 ```bash
